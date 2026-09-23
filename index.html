@@ -219,7 +219,7 @@ async function renderAdminRooms(){
  const box=document.getElementById('adminRooms'); if(!box)return;
  const {data:rooms}=await supabaseClient.from('rooms').select('*').order('match_id');
  const byMatch={};(rooms||[]).forEach(r=>byMatch[r.match_id]=r);
- const {data:allMatches,error}=await supabaseClient.from('matches').select('id,match_number,match_time,published').order('match_date').order('match_time');
+ const {data:allMatches,error}=await supabaseClient.from('matches').select('id,match_number,match_time,published').is('admin_deleted_at',null).order('match_date').order('match_time');
  if(error){box.innerHTML=`<div class="profileCard">${esc2(error.message)}</div>`;return}
  box.innerHTML=(allMatches||[]).map(m=>{const r=byMatch[m.id]||{};return `<div class="adminRoom"><div style="display:flex;justify-content:space-between;gap:8px"><b>Match ${m.match_number} • ${esc2(m.match_time||'')}</b><span class="tag ${r.published?'':'up'}">${r.published?'PUBLISHED':'HIDDEN'}</span></div><div class="fields"><input id="rid-${m.id}" value="${esc2(r.room_id||'')}" placeholder="Room ID"><input id="rpw-${m.id}" value="${esc2(r.room_password||'')}" placeholder="Room Password"></div><div class="adminRoomBtns"><button class="smallbtn" onclick="publishRoom(${m.id})">PUBLISH / UPDATE</button><button class="btn ghost" onclick="hideRoom(${m.id})">HIDE</button><button class="btn ghost" onclick="deleteRoom(${m.id})">🗑️ DELETE ROOM</button></div></div>`}).join('')||'<div class="profileCard">No matches yet.</div>';
 }
@@ -417,10 +417,10 @@ function ensureMapPreview(){
 function mapImageForMatch(m){return m.image_url||mapImageFor(m.map_name)}
 async function deleteMatch(id,number){
   if(!await isAdmin())return;
-  if(!confirm(`Match ${number} ko DELETE karna hai?\nJoined players ka My Tournament record rahega. Room ID/Password remove ho jayega.`))return;
+  if(!confirm(`Match ${number} ko DELETE karna hai?\nMatch player side se remove ho jayega, Room ID/Password delete ho jayega, aur joined players ka My Tournament record safe rahega.`))return;
   const {data,error}=await supabaseClient.rpc('admin_delete_match',{p_match_id:Number(id)});
   if(error){alert(error.message);return}
-  alert(`Match ${number} deleted. Joined record safe hai aur Room ID/Password remove ho gaya.`);
+  alert(`Match ${number} deleted. Player side se hide ho gaya, Room ID/Password remove ho gaya, aur joined players ka My Tournament record safe hai.`);
   await loadMatchesV2();
   await renderMatchManagerV2();
   await renderAdminTimes();
